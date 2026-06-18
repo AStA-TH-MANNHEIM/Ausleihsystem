@@ -1,0 +1,2 @@
+# Ausleihsystem_OpenSource_AStA_18062026
+Open Source Ausleihsystem der Verfassten Studierendenschaft der Technischen Hochschule in Mannheim
