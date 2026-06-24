@@ -1,0 +1,37 @@
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: ausleihsystem_postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+      POSTGRES_DB: ${POSTGRES_DB:-ausleihsystem}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: always
+
+  app:
+    build: .
+    container_name: ausleihsystem_app
+    depends_on:
+      - postgres
+    environment:
+      DATABASE_URL: 'postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-changeme}@postgres:5432/${POSTGRES_DB:-ausleihsystem}?schema=public'
+      DOMAIN: ${DOMAIN:-http://localhost:3000}
+
+      # E-Mail-Versand
+      ES_DISABLED: ${ES_DISABLED:-TRUE}
+      ES_HOST: ${ES_HOST:-}
+      ES_USER: ${ES_USER:-}
+      ES_PASSWORD: ${ES_PASSWORD:-}
+      ES_SECURE: ${ES_SECURE:-FALSE}
+      ES_AUSLEIHE_TEAM: ${ES_AUSLEIHE_TEAM:-}
+
+      NODE_ENV: ${NODE_ENV:-production}
+      TZ: ${TZ:-Europe/Berlin}
+    ports:
+      - '${APP_PORT:-3000}:3000'
+    restart: always
+
+volumes:
+  postgres_data:

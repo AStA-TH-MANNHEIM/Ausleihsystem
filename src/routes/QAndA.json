@@ -1,0 +1,17 @@
+[
+	{
+		"frage": "Wie kann ich eine Ausleihe beantragen?",
+		"antwort": "Um einen Ausleiheantrag zu stellen, klicke unten auf 'Ausleihe beantragen' und fülle das Onlineformular aus. Wenn du den Antrag abschickst erhälst du eine Verifizierungsmail. Sobald du dich verifiziert hast und der AStA deinen Antrag genehmigt hat, erhältst du eine Benachrichtigung.",
+		"iconUrl": "?"
+	},
+	{
+		"frage": "Wie kann ich eine Ausleihe einsehen?",
+		"antwort": "Wenn du eine ausleihe Beantragt hast, hast du eine Email erhalten, in der ein Link zu deiner Ausleihe zu finden ist.",
+		"iconUrl": "?"
+	},
+	{
+		"frage": "Ist es wichtig welche Email ich verwende?",
+		"antwort": "Ja - durch die Email können wir zuordnen in welcher Rolle du den Antrag stellst. Fachschaften stehen zum Beispiel andere Gegenstände zur Verfügung als dem AStA intern.",
+		"iconUrl": "?"
+	}
+]

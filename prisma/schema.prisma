@@ -1,0 +1,277 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
+}
+generator zod {
+  provider       = "zod-prisma-types"
+  output                           = "../src/lib/generated/zod" 
+  addIncludeType = false
+  addSelectType = false
+  createInputTypes                 = false // default is true
+  addInputTypeValidation           = false // default is true
+  validateWhereUniqueInput         = false // default is true
+}  
+ 
+datasource db {
+  provider = "postgresql"
+  // Uses connection pooling
+  url = env("DATABASE_URL")
+  // Uses direct connection, ⚠️ make sure to keep this to `POSTGRES_URL_NON_POOLING`
+  // or you'll have dangling databases from migrations
+  directUrl = env("DATABASE_URL") 
+}
+
+enum ItemStatus {
+  Verfuegbar
+  Defekt
+  Gesperrt
+  Verloren
+  WartungErforderlich
+  Aussortiert
+}
+
+enum UserType {
+  Sonstige
+  StudentIn
+  Fachschaft
+  AStA
+}
+
+enum AusleihStatus {
+  Angemeldet
+  Verifiziert
+  Reserviert
+  Gebucht
+  ImGange
+  Abgeschlossen
+  AbgeschlUnvollst
+  Storniert
+}
+
+enum PfandStatus {
+  PfandNichtFestgelegt
+  PfandBezahlt
+  PfandZurueckgegeben
+}
+
+enum ChangeSource {
+  USER
+  ADMIN
+}
+
+enum ChangeLogStatus {
+  PENDING
+  APPLIED
+  SUPERSEDED
+  CANCELLED
+}
+
+model Ausleihe {
+  id            String         @id @default(uuid())
+  startDate     String
+  endDate       String
+  ausleihStatus AusleihStatus  @default(Angemeldet)
+  timestamp     DateTime       @default(now())
+  /// @zod.custom.use(z.string().email({ message: "Bitte gib eine gültige E-Mail-Adresse an." }).refine((val) => val.endsWith('hs-mannheim.de') || val.endsWith('stud.hs-mannheim.de'), { message: 'Die Email muss mit "hs-mannheim.de" oder "stud.hs-mannheim.de" enden.' }))
+  email         String
+  /// @zod.string.min(1, { message: "Bitte gib deinen Vornamen an." })
+  vorname       String
+  /// @zod.string.min(1, { message: "Bitte gib deinen Nachnamen an." })
+  nachname      String
+  /// @zod.string
+  phone      String   @default("N/A")
+  /// @zod.string.min(1, { message: "Bitte gib einen Verwendungszweck an." })
+  reason     String   @default("N/A")
+
+  verwendungsort   String @default("")
+  verwendungsStart String @default("")
+  verwendungsEnd   String @default("")
+
+  abholort      String?
+
+  pfandBetrag   Float?        @default(0)
+  pfandStatus   PfandStatus?  @default(PfandNichtFestgelegt)
+
+  AusleiheItems AusleiheItem[]
+  AusleiheComments AusleiheComment[]
+  AusleiheChangeLogs AusleiheChangeLog[]
+  
+  UserAusgabe User? @relation("AusgabeBetreuer", references: [id], fields: [assignedUserAusgabeId], onDelete: SetNull)
+    assignedUserAusgabeId String?
+
+  UserAbholung User? @relation("AbholungBetreuer", references: [id], fields: [assignedUserAbholungId], onDelete: SetNull)
+    assignedUserAbholungId String?
+
+  deleteMe    Boolean   @default(false)
+}
+
+model AusleiheComment {
+  id             Int      @id @default(autoincrement())
+  ausleiheId     String      
+  ausleihe       Ausleihe @relation(fields: [ausleiheId], references: [id], onDelete: Cascade)
+  timestamp     DateTime       @default(now())
+  author      String
+  // I don't use a relation so we can delete users and still keep the comments
+  //User User? @relation(references: [id], fields: [login])
+  login String?
+  hidden    Boolean   @default(true)
+  content     String
+}
+
+model AusleiheChangeLog {
+  id            Int             @id @default(autoincrement())
+  ausleiheId    String
+  ausleihe      Ausleihe        @relation(fields: [ausleiheId], references: [id], onDelete: Cascade)
+  timestamp     DateTime        @default(now())
+  source        ChangeSource
+  actorName     String
+  actorId       String?
+  /// JSON-Array: [{ field, label, oldValue, newValue }]
+  changes       Json
+  /// JSON-Snapshot der vom User vorgeschlagenen Werte (nur bei PENDING/SUPERSEDED relevant)
+  proposedData  Json?
+  adminNote     String?
+  status        ChangeLogStatus @default(APPLIED)
+  confirmationToken String?     @unique
+  confirmedAt   DateTime?
+  resolvedAt    DateTime?
+
+  @@index([ausleiheId])
+  @@index([confirmationToken])
+}
+
+model AusleiheItem {
+  id             Int      @id @default(autoincrement())
+  beantragt      Int      @default(0)
+  genehmigt      Int      @default(0)
+  zurueckgebracht Int     @default(0)
+
+  ausleiheId     String      
+  itemId         String
+  ausleihe       Ausleihe @relation(fields: [ausleiheId], references: [id], onDelete: Cascade)
+  item           Item     @relation(fields: [itemId], references: [id])
+}
+
+model Item {
+  /// @zod.string.regex(/^\d{4}(0[1-9]|1[0-2])(0[1-9]|[12][0-9]|3[01])-\d{2}$/, {message: "Bitte nutze die Inventarnummer im Format: YYYYMMDD-NN",})
+  id                       String         @id
+  /// @zod.string.min(1, {message:"Bitte gib einen Namen ein."})
+  articleName              String      
+  /// @zod.string.min(1, {message:"Bitte gib eine Bezeichnung ein."})
+  bezeichnung              String
+  kaufdatum                DateTime?
+  /// @zod.number.min(0)
+  kaufpreis                Int?       @default(0) //in €-ct
+  description              String     @default("")
+  /// @zod.number.min(1)
+  quantity                 Int        @default(1)
+  /// @zod.number.min(0)
+  defectQuantity           Int        @default(0)
+  itemStatus               ItemStatus @default(Verfuegbar)
+
+  AusleiheItems            AusleiheItem[]
+  ItemComponents           ItemComponent[]
+  standortId               Int?
+  Standort                 Standort?  @relation(fields: [standortId], references: [id])
+
+  ItemTags                 ItemTag[]
+  ItemLenderTypes          ItemLenderType[]
+}
+
+model Tag {
+  id          Int      @id @default(autoincrement())
+  /// @zod.string.min(1, {message:"Bitte gib einen Tag-Namen ein."})
+  name        String   @unique
+  description String?
+
+  ItemTags    ItemTag[]
+}
+
+model ItemTag {
+  itemId      String
+  tagId       Int
+
+  item        Item     @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  tag         Tag      @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([itemId, tagId])
+}
+
+model Standort{
+  id Int @id @default(autoincrement())
+  standort String @unique
+
+  Items Item[]
+}
+
+model User {
+  id       String    @id
+  username     String  @unique
+  /// @zod.custom.use(z.string().email({ message: "Bitte gib eine gültige Email an." }).refine((val) => val.endsWith('hs-mannheim.de') || val.endsWith('stud.hs-mannheim.de'), { message: 'Die Email muss mit "hs-mannheim.de" oder "stud.hs-mannheim.de" enden.' }))
+  email String
+  passwordHash String
+  protected    Boolean   @default(false)
+  isAdmin      Boolean   @default(false)
+
+  createdById  String?
+  createdBy    User?     @relation("UserCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  createdUsers User[]    @relation("UserCreatedBy")
+
+  sessions Session[]
+
+  AusleiheAusgabe Ausleihe[] @relation("AusgabeBetreuer")
+  AusleiheAbholung Ausleihe[] @relation("AbholungBetreuer")
+}
+
+model Session {
+  id        String   @id
+  userId    String
+  expiresAt DateTime
+
+  user      User     @relation(references: [id], fields: [userId], onDelete: Cascade)
+}
+
+model LenderType {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
+  description String?
+
+  LenderTypePatterns LenderTypePattern[]
+  ItemLenderTypes    ItemLenderType[]
+}
+
+model LenderTypePattern {
+  id           Int        @id @default(autoincrement())
+  lenderTypeId Int
+  pattern      String
+
+  LenderType   LenderType @relation(fields: [lenderTypeId], references: [id], onDelete: Cascade)
+}
+
+model ItemLenderType {
+  itemId       String
+  lenderTypeId Int
+
+  item         Item       @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  lenderType   LenderType @relation(fields: [lenderTypeId], references: [id], onDelete: Cascade)
+
+  @@id([itemId, lenderTypeId])
+}
+
+model ItemComponent {
+  id          Int    @id @default(autoincrement())
+  /// @zod.string.min(1, {message:"Bitte gib einen Namen ein."})
+  name        String
+  description String @default("")
+  /// @zod.number.min(1)
+  quantity    Int    @default(1)
+
+  itemId      String
+  item        Item   @relation(fields: [itemId], references: [id], onDelete: Cascade)
+}

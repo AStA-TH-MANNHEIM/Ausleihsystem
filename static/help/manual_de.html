@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta http-equiv="content-type" content="text/html; charset=utf-8"/>
+	<title></title>
+	<meta name="generator" content="LibreOffice 24.8.4.2 (MacOSX)"/>
+	<meta name="created" content="2025-07-24T11:11:36.083144793"/>
+	<meta name="changed" content="2025-09-16T13:28:24.474924143"/>
+	<style type="text/css">
+		@page { size: 8.27in 11.69in; margin: 0.79in }
+		h1 { margin-bottom: 0.08in; background: transparent }
+		h1.western { font-family: "Liberation Sans", sans-serif; font-size: 18pt }
+		h1.cjk { font-family: "PingFang SC"; font-size: 18pt }
+		h1.ctl { font-family: "Arial Unicode MS"; font-size: 18pt }
+		p { line-height: 115%; margin-bottom: 0.1in; background: transparent }
+		h2 { margin-top: 0.14in; margin-bottom: 0.08in; background: transparent }
+		h2.western { font-family: "Liberation Sans", sans-serif; font-size: 16pt }
+		h2.cjk { font-family: "PingFang SC"; font-size: 16pt }
+		h2.ctl { font-family: "Arial Unicode MS"; font-size: 16pt }
+	</style>
+</head>
+<body lang="en-US" dir="ltr"><h1 class="western"><font size="6" style="font-size: 22pt">Ausleihsystem
+– Anleitung</font></h1>
+<p style="line-height: 100%; margin-bottom: 0in"><br/>
+
+</p>
+<p style="line-height: 100%; margin-bottom: 0in"><br/>
+
+</p>
+<p style="line-height: 100%; margin-bottom: 0in"><br/>
+
+</p>
+<h2 class="western">Dokumentation der möglichen Zustände einer
+Ausleihe:<br/>
+<br/>
+<br/>
+
+</h2>
+<p><img src="manual_de_html_bc3f8bad.gif" name="Image3" align="bottom" width="1121" height="872" border="0"/>
+
+</p>
+<p style="line-height: 100%; margin-bottom: 0in"><font color="#000000"><font face="AppleSystemUIFont"><font size="3" style="font-size: 13pt">*)
+Dies sollte nur im Testfall oder in Absprache mit der ausleihenden
+Person im Adminpanel durchgeführt werden!</font></font></font></p>
+<p style="line-height: 100%; margin-bottom: 0in"><br/>
+
+</p>
+<p style="line-height: 100%; margin-bottom: 0in"><font color="#000000"><font face="AppleSystemUIFont"><font size="3" style="font-size: 13pt">Dokumentiert
+in <a href="https://ausleihe.vs.hs-mannheim.de/admin/reservations/special">https://ausleihe.vs.hs-mannheim.de/admin/reservations/special</a></font></font></font></p>
+<h2 class="western"><br/>
+<br/>
+
+</h2>
+<h2 class="western"><br/>
+Zustandsdiagramm Ausleihe:</h2>
+<p style="line-height: 100%; margin-bottom: 0in"><br/>
+
+</p>
+<p style="line-height: 100%; margin-bottom: 0in"><img src="manual_de_html_57fc6be0.png" name="Image1" align="bottom" width="916" height="858" border="0"/>
+
+</p>
+<p style="line-height: 100%; margin-bottom: 0in"><br/>
+
+</p>
+<p style="line-height: 100%; margin-bottom: 0in"><font color="#000000"><font face="AppleSystemUIFont"><font size="3" style="font-size: 13pt">Dokumentiert
+in src/routes/reservation/readme.md</font></font></font></p>
+<p style="line-height: 100%; margin-bottom: 0in"><br/>
+
+</p>
+<p style="line-height: 100%; margin-bottom: 0in"><font color="#000000"><font face="AppleSystemUIFont"><font size="3" style="font-size: 13pt">Legende:</font></font></font></p>
+<p style="line-height: 100%; margin-bottom: 0in"><font color="#000000"><font face="AppleSystemUIFont"><font size="3" style="font-size: 13pt"><b>S</b></font></font></font><font color="#000000"><font face="AppleSystemUIFont"><font size="3" style="font-size: 13pt">:
+Signal von außen, das zum Zustandswechsel (state transition) führt,
+sofern die Bedingung (condition) erfüllt ist.</font></font></font></p>
+<p style="line-height: 100%; margin-bottom: 0in"><font color="#000000"><font face="AppleSystemUIFont"><font size="3" style="font-size: 13pt">Wenn
+nicht angegeben, ist das Signal die Zustandsänderung im Adminpanel.</font></font></font></p>
+<p style="line-height: 100%; margin-bottom: 0in"><font color="#000000"><font face="AppleSystemUIFont"><font size="3" style="font-size: 13pt"><b>C</b></font></font></font><font color="#000000"><font face="AppleSystemUIFont"><font size="3" style="font-size: 13pt">:
+Erforderliche Bedingung für den Zustandswechsel, nicht alle hier
+aufgeführt</font></font></font></p>
+<p style="line-height: 100%; margin-bottom: 0in"><font color="#000000"><font face="AppleSystemUIFont"><font size="3" style="font-size: 13pt"><b>A</b></font></font></font><font color="#000000"><font face="AppleSystemUIFont"><font size="3" style="font-size: 13pt">:
+Aktion, die von der Software beim Zustandswechsel ausgeführt wird,
+nicht alle hier aufgeführt</font></font></font></p>
+<p style="line-height: 100%; margin-bottom: 0in"><br/>
+
+</p>
+<p style="line-height: 100%; margin-bottom: 0in"><br/>
+
+</p>
+<h2 class="western"><font color="#000000"><font face="AppleSystemUIFont"><font size="3" style="font-size: 13pt">Verfügbarkeit
+der AusleiheItems (Beispiele)</font></font></font></h2>
+<p><br/>
+<br/>
+
+</p>
+<p><font color="#000000"><img src="manual_de_html_7556e4e7.gif" name="Image2" align="bottom" width="1607" height="282" border="0"/>
+
+</font>
+</p>
+<p><br/>
+<br/>
+
+</p>
+<p><font color="#000000"><font face="AppleSystemUIFont"><font size="3" style="font-size: 13pt">Die
+Werte “-5 (0/9)” von rechts nach links erläutert:</font></font></font></p>
+<p><font color="#000000"><font face="AppleSystemUIFont"><font size="3" style="font-size: 13pt">Ingesamt
+gibt es </font></font></font><strong><font color="#000000"><font face="AppleSystemUIFont"><font size="3" style="font-size: 13pt">9
+Examplare</font></font></font></strong><font color="#000000"> </font><font color="#000000"><font face="AppleSystemUIFont"><font size="3" style="font-size: 13pt">im
+</font></font></font><em><font color="#000000"><font face="AppleSystemUIFont"><font size="3" style="font-size: 13pt">Bestand</font></font></font></em><font color="#000000"><font face="AppleSystemUIFont"><font size="3" style="font-size: 13pt">.
+Davon sind alle für diesen Zeitraum genehmigt oder noch ausgeliehen,
+d.h. </font></font></font><strong><font color="#000000"><font face="AppleSystemUIFont"><font size="3" style="font-size: 13pt">0
+Exemplare</font></font></font></strong><font color="#000000"> </font><font color="#000000"><font face="AppleSystemUIFont"><font size="3" style="font-size: 13pt">sind
+</font></font></font><em><font color="#000000"><font face="AppleSystemUIFont"><font size="3" style="font-size: 13pt">ingesamt
+verfügbar</font></font></font></em><font color="#000000"><font face="AppleSystemUIFont"><font size="3" style="font-size: 13pt">.
+Aus Sicht dieser Ausleihe sind sogar theoretisch nur </font></font></font><strong><font color="#000000"><font face="AppleSystemUIFont"><font size="3" style="font-size: 13pt">-5
+Examplare</font></font></font></strong><font color="#000000">
+</font><em><font color="#000000"><font face="AppleSystemUIFont"><font size="3" style="font-size: 13pt">verfügbar</font></font></font></em><font color="#000000"><font face="AppleSystemUIFont"><font size="3" style="font-size: 13pt">,
+weil es frühere Ausleihen in der Warteliste gibt.</font></font></font></p>
+<p><font color="#000000"><font face="AppleSystemUIFont"><font size="3" style="font-size: 13pt">Da
+die beantragte Anzahl nicht verfügbar ist, wird “Verfügbar” mit
+einem Warnschild gekennzeichnet.</font></font></font></p>
+<p><br/>
+<br/>
+
+</p>
+<p><br/>
+<br/>
+
+</p>
+<p><img src="manual_de_html_9870e7ee.gif" name="Image4" align="bottom" width="1610" height="383" border="0"/>
+
+</p>
+<p style="line-height: 100%; margin-bottom: 0in"><br/>
+
+</p>
+<p><font color="#000000"><font face="AppleSystemUIFont"><font size="3" style="font-size: 13pt">Auch
+diese Ausleihe beantragt den gleichen Artikel “VGA Kabel” und ein
+“Glücksrad”. Wir genehmigen nur das Glücksrad:</font></font></font></p>
+<p><br/>
+<br/>
+
+</p>
+<p><font color="#000000"><img src="manual_de_html_8c71c80b.gif" name="Image5" align="bottom" width="1607" height="353" border="0"/>
+
+</font>
+</p>
+<p><font color="#000000"><font face="AppleSystemUIFont"><font size="3" style="font-size: 13pt">Da
+die beantragte Anzahl nicht genehmigt wurde, wird “Genehmigt” mit
+einem Warnschild gekennzeichnet.</font></font></font></p>
+<p><br/>
+<br/>
+
+</p>
+<p><font color="#000000"><font face="AppleSystemUIFont"><font size="3" style="font-size: 13pt">Wenn
+wir wieder zur zuerst gezeigten Ausleihe gehen, dann hat sehen wir
+eine Veränderung für “VGA-Kabel” von “-5 (0/9)” nach “-2
+(0/9)”:</font></font></font></p>
+<p><font color="#000000"><img src="manual_de_html_a8ea31be.gif" name="Image6" align="bottom" width="1626" height="331" border="0"/>
+
+</font>
+</p>
+<p><br/>
+<br/>
+
+</p>
+<p><font color="#000000"><font face="AppleSystemUIFont"><font size="3" style="font-size: 13pt">Da
+die 3 beantragten Examplare der früheren Ausleihe (vom 23. Juli)
+zuvor nicht genehmigt wurden und diese frühere Ausleihe in den
+Status “Reserviert” gegangen ist, wurden nun 3 Exemplare frei
+gegeben.</font></font></font></p>
+<p><font color="#000000"><font face="AppleSystemUIFont"><font size="3" style="font-size: 13pt">Es
+sind jedoch immer noch Anträge in der Warteliste weiter vorne und
+somit ist die Verfügbarkeit zwar von -5 auf -2 gegangen, aber immer
+noch negativ.<br/>
+<br/>
+</font></font></font><br/>
+<br/>
+
+</p>
+<p><br/>
+<br/>
+
+</p>
+</body>
+</html>
