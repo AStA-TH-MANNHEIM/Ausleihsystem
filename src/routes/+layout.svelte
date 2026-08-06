@@ -27,13 +27,7 @@
 	});
 
 	onMount(() => {
-		// Initialize dark mode from localStorage
-		const savedTheme = localStorage.getItem('color-theme');
-		if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-			document.documentElement.classList.add('dark');
-		} else {
-			document.documentElement.classList.remove('dark');
-		}
+		// Dark mode wird bereits vor dem Rendern in app.html initialisiert.
 
 		document.addEventListener('reload', (event) => {
 			console.log("Special reload event!");

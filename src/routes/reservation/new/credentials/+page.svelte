@@ -5,7 +5,6 @@
 	import { Input } from '$lib/components/ui/input';
 	import { Label } from '$lib/components/ui/label';
 	import { Textarea } from '$lib/components/ui/textarea';
-	import * as Select from '$lib/components/ui/select';
 	import { reservationStore } from '../(stores)/reservationStore';
 	import { credentialsSchema } from '../(schemas)/credentialsSchema';
 
@@ -13,30 +12,36 @@
 
 	$: lenderTypes = data.lenderTypes;
 
-	// Default to "Fachschaft" if no lender type selected yet
-	$: if ($reservationStore.lenderTypeId === null && lenderTypes.length > 0) {
-		const fachschaft = lenderTypes.find((lt) => lt.name === 'Fachschaft');
-		$reservationStore.lenderTypeId = fachschaft ? fachschaft.id : lenderTypes[0].id;
+	// Der Ausleihertyp wird automatisch aus der E-Mail-Adresse abgeleitet
+	// (LenderTypePattern-Regexe aus der Datenbank).
+	$: anyPatterns = lenderTypes.some((lt) => lt.LenderTypePatterns.length > 0);
+	$: email = $reservationStore.email;
+	$: matchedTypes = !email
+		? []
+		: lenderTypes.filter((lt) =>
+				lt.LenderTypePatterns.some((p) => {
+					try {
+						return new RegExp(p.pattern).test(email);
+					} catch {
+						return false;
+					}
+				})
+			);
+	$: syncLenderTypeIds(matchedTypes);
+
+	function syncLenderTypeIds(types: typeof lenderTypes) {
+		const ids = types.map((lt) => lt.id);
+		const current = $reservationStore.lenderTypeIds ?? [];
+		if (ids.length !== current.length || ids.some((id, i) => id !== current[i])) {
+			$reservationStore.lenderTypeIds = ids;
+		}
 	}
 
-	// Local form state bound to store
-	$: selectedLenderType = lenderTypes.find((lt) => lt.id === $reservationStore.lenderTypeId);
-
-	// Email validation against LenderType patterns
 	$: emailError = (() => {
 		if (!$reservationStore.email) return '';
-		if (!selectedLenderType) return '';
-		const patterns = selectedLenderType.LenderTypePatterns;
-		if (patterns.length === 0) return '';
-		const matches = patterns.some((p) => {
-			try {
-				return new RegExp(p.pattern).test($reservationStore.email);
-			} catch {
-				return false;
-			}
-		});
-		if (!matches) {
-			return `Die E-Mail passt nicht zum gewählten Ausleihertyp "${selectedLenderType.name}".`;
+		if (!anyPatterns) return '';
+		if (matchedTypes.length === 0) {
+			return 'Diese E-Mail-Adresse wurde nicht erkannt. Bitte nutze deine Hochschul-E-Mail-Adresse.';
 		}
 		return '';
 	})();
@@ -46,7 +51,6 @@
 	function validate(): boolean {
 		errors = {};
 		const result = credentialsSchema.safeParse({
-			lenderTypeId: $reservationStore.lenderTypeId,
 			vorname: $reservationStore.vorname,
 			nachname: $reservationStore.nachname,
 			email: $reservationStore.email,
@@ -76,48 +80,12 @@
 			goto('/reservation/new/dates');
 		}
 	}
-
-	function handleLenderTypeSelect(e: any) {
-		if (e?.value !== undefined) {
-			$reservationStore.lenderTypeId = e.value;
-		}
-	}
 </script>
 
 <ContentCard classes="max-w-xl">
 	<span slot="header">Kontaktdaten</span>
 
 	<div class="space-y-4">
-		<!-- LenderType Select -->
-		<div class="space-y-2">
-			<Label>Ausleihertyp</Label>
-			<Select.Root
-				selected={selectedLenderType
-					? { value: selectedLenderType.id, label: selectedLenderType.name }
-					: undefined}
-				onSelectedChange={handleLenderTypeSelect}
-			>
-				<Select.Trigger>
-					<Select.Value placeholder="Bitte wählen..." />
-				</Select.Trigger>
-				<Select.Content>
-					{#each lenderTypes as lt (lt.id)}
-						<Select.Item value={lt.id} label={lt.name}>
-							<div>
-								<span>{lt.name}</span>
-								{#if lt.description}
-									<span class="ml-2 text-xs text-muted-foreground">{lt.description}</span>
-								{/if}
-							</div>
-						</Select.Item>
-					{/each}
-				</Select.Content>
-			</Select.Root>
-			{#if errors.lenderTypeId}
-				<p class="text-sm text-destructive">{errors.lenderTypeId}</p>
-			{/if}
-		</div>
-
 		<!-- Name Fields -->
 		<div class="grid grid-cols-2 gap-4">
 			<div class="space-y-2">
@@ -143,12 +111,16 @@
 				id="email"
 				type="email"
 				bind:value={$reservationStore.email}
-				placeholder="m.mustermann@stud.hs-mannheim.de"
+				placeholder="vorname.nachname@stud.hs-mannheim.de"
 			/>
 			{#if errors.email}
 				<p class="text-sm text-destructive">{errors.email}</p>
 			{:else if emailError}
 				<p class="text-sm text-destructive">{emailError}</p>
+			{:else if matchedTypes.length > 0}
+				<p class="text-sm text-muted-foreground">
+					Erkannt als: {matchedTypes.map((lt) => lt.name).join(', ')}
+				</p>
 			{/if}
 		</div>
 

@@ -2,6 +2,7 @@ import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { prisma } from '$lib/server/db/prismaConnection';
 import { inferLenderTypes } from '$lib/services/lenderTypeService';
+import { getItemAvailabilityForAll } from '$lib/server/db/ItemAvailability';
 import { sendVerifyEmail, sendActionRequiredEmail } from '$lib/server/emailService/emailService';
 import { credentialsSchema } from '../(schemas)/credentialsSchema';
 import { dateSchema } from '../(schemas)/dateSchema';
@@ -38,22 +39,32 @@ export const POST: RequestHandler = async ({ request }) => {
 			return json({ error: itemsResult.error.issues[0].message }, { status: 400 });
 		}
 
-		// Verify email matches LenderType
+		// Infer LenderTypes from the email (no manual selection anymore)
 		const matchedTypes = await inferLenderTypes(credResult.data.email);
-		const matchesLenderType = matchedTypes.some((lt) => lt.id === credResult.data.lenderTypeId);
-		if (!matchesLenderType) {
-			return json(
-				{ error: 'Die E-Mail-Adresse passt nicht zum gewählten Ausleihertyp.' },
-				{ status: 400 }
-			);
+		const matchedTypeIds = matchedTypes.map((lt) => lt.id);
+		if (matchedTypes.length === 0) {
+			const anyPatterns = await prisma.lenderTypePattern.count();
+			if (anyPatterns > 0) {
+				return json(
+					{
+						error: 'Diese E-Mail-Adresse wurde nicht erkannt. Bitte nutze deine Hochschul-E-Mail-Adresse.'
+					},
+					{ status: 400 }
+				);
+			}
 		}
 
-		// Verify item access: items must be either unrestricted or matching the lenderType
+		// Verify item access: items must be either unrestricted or matching an inferred type
 		const requestedItemIds = itemsResult.data.map((i) => i.itemId);
 		const items = await prisma.item.findMany({
 			where: { id: { in: requestedItemIds } },
 			include: { ItemLenderTypes: true }
 		});
+
+		const availabilityMap = await getItemAvailabilityForAll(
+			dateResult.data.startDate,
+			dateResult.data.endDate
+		);
 
 		for (const reqItem of itemsResult.data) {
 			const dbItem = items.find((i) => i.id === reqItem.itemId);
@@ -68,17 +79,30 @@ export const POST: RequestHandler = async ({ request }) => {
 			}
 			// Check LenderType restriction
 			if (dbItem.ItemLenderTypes.length > 0) {
-				const allowed = dbItem.ItemLenderTypes.some(
-					(ilt) => ilt.lenderTypeId === credResult.data.lenderTypeId
+				const allowed = dbItem.ItemLenderTypes.some((ilt) =>
+					matchedTypeIds.includes(ilt.lenderTypeId)
 				);
 				if (!allowed) {
 					return json(
 						{
-							error: `Gegenstand "${dbItem.articleName}" ist für diesen Ausleihertyp nicht verfügbar.`
+							error: `Gegenstand "${dbItem.articleName}" ist für deinen Ausleihertyp nicht verfügbar.`
 						},
 						{ status: 400 }
 					);
 				}
+			}
+			// Check requested quantity against availability in the requested window
+			const available = Math.max(
+				0,
+				availabilityMap.get(dbItem.id)?.verfuegbGes ?? dbItem.quantity
+			);
+			if (reqItem.quantity > available) {
+				return json(
+					{
+						error: `Von "${dbItem.articleName}" sind im gewählten Zeitraum nur ${available} verfügbar.`
+					},
+					{ status: 400 }
+				);
 			}
 		}
 

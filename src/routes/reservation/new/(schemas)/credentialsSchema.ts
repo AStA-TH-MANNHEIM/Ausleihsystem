@@ -1,7 +1,6 @@
 import { z } from 'zod';
 
 export const credentialsSchema = z.object({
-	lenderTypeId: z.number({ required_error: 'Bitte wähle einen Ausleihertyp aus.' }),
 	vorname: z.string().min(1, { message: 'Bitte gib deinen Vornamen an.' }),
 	nachname: z.string().min(1, { message: 'Bitte gib deinen Nachnamen an.' }),
 	email: z.string().email({ message: 'Bitte gib eine gültige E-Mail-Adresse an.' }),

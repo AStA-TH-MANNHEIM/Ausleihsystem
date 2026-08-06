@@ -40,6 +40,31 @@
 		}
 	}
 
+	// Remove picked items that are no longer offered (e.g. after the inferred
+	// lender type changed) and clamp quantities to the current availability.
+	$: {
+		const itemMap = new Map(items.map((i) => [i.id, i]));
+		const cleaned = $reservationStore.pickedItems
+			.filter((p) => itemMap.has(p.itemId))
+			.map((p) => {
+				const item = itemMap.get(p.itemId)!;
+				return {
+					...p,
+					quantity: Math.min(p.quantity, item.available),
+					maxAvailable: item.available
+				};
+			})
+			.filter((p) => p.quantity > 0);
+
+		const changed =
+			cleaned.length !== $reservationStore.pickedItems.length ||
+			cleaned.some((p, i) => {
+				const old = $reservationStore.pickedItems[i];
+				return p.quantity !== old.quantity || p.maxAvailable !== old.maxAvailable;
+			});
+		if (changed) $reservationStore.pickedItems = cleaned;
+	}
+
 	// Reactive map so the template re-renders when the store changes
 	$: pickedMap = new Map($reservationStore.pickedItems.map((p) => [p.itemId, p.quantity]));
 
@@ -86,7 +111,6 @@
 		if (pickedItems.length === 0) return;
 
 		const body = {
-			lenderTypeId: $reservationStore.lenderTypeId,
 			vorname: $reservationStore.vorname,
 			nachname: $reservationStore.nachname,
 			email: $reservationStore.email,

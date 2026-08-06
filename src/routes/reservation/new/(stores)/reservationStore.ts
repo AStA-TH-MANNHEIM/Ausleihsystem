@@ -10,7 +10,8 @@ export type PickedItem = {
 
 export type ReservationFormState = {
 	// Step 1: Credentials
-	lenderTypeId: number | null;
+	/** Ausleihertypen, automatisch aus der E-Mail-Adresse abgeleitet. */
+	lenderTypeIds: number[];
 	vorname: string;
 	nachname: string;
 	email: string;
@@ -29,7 +30,7 @@ export type ReservationFormState = {
 };
 
 const defaultState: ReservationFormState = {
-	lenderTypeId: null,
+	lenderTypeIds: [],
 	vorname: '',
 	nachname: '',
 	email: '',

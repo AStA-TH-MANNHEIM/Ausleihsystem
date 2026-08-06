@@ -38,7 +38,7 @@
 	function handleNext() {
 		if (validate()) {
 			const params = new URLSearchParams({
-				lenderTypeId: String($reservationStore.lenderTypeId),
+				lenderTypeIds: ($reservationStore.lenderTypeIds ?? []).join(','),
 				startDate: $reservationStore.startDate,
 				endDate: $reservationStore.endDate
 			});

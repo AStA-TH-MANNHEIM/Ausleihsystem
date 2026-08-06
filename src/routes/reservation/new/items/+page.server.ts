@@ -1,9 +1,13 @@
 import type { PageServerLoad } from './$types';
 import { prisma } from '$lib/server/db/prismaConnection';
 import { getItemAvailabilityForAll } from '$lib/server/db/ItemAvailability';
+import { accessibleItemWhere } from '$lib/services/lenderTypeService';
 
 export const load: PageServerLoad = async ({ url }) => {
-	const lenderTypeId = parseInt(url.searchParams.get('lenderTypeId') || '0');
+	const lenderTypeIds = (url.searchParams.get('lenderTypeIds') || '')
+		.split(',')
+		.map((id) => parseInt(id))
+		.filter((id) => !isNaN(id));
 	const startDate = url.searchParams.get('startDate') || '';
 	const endDate = url.searchParams.get('endDate') || '';
 
@@ -11,10 +15,7 @@ export const load: PageServerLoad = async ({ url }) => {
 	const items = await prisma.item.findMany({
 		where: {
 			itemStatus: 'Verfuegbar',
-			OR: [
-				{ ItemLenderTypes: { none: {} } },
-				...(lenderTypeId ? [{ ItemLenderTypes: { some: { lenderTypeId } } }] : [])
-			]
+			...accessibleItemWhere(lenderTypeIds)
 		},
 		include: {
 			Standort: true,
@@ -37,7 +38,7 @@ export const load: PageServerLoad = async ({ url }) => {
 		return {
 			...item,
 			available: Math.max(0, available),
-			kaufdatum: item.kaufdatum.toISOString()
+			kaufdatum: item.kaufdatum ? item.kaufdatum.toISOString() : null
 		};
 	});
 

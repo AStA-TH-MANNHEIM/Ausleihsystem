@@ -28,8 +28,8 @@
 
 	<p>
 		Das Ausleihsystem ist ein Open-Source-Projekt, das unter der MIT-Lizenz veröffentlicht wird.
-		Die Quellcode-Dateien sind auf <a href="https://gitlab.com/asta2653315/Ausleihsystem/"
-			>GitLab</a
+		Die Quellcode-Dateien sind auf <a href="https://github.com/AStA-TH-MANNHEIM/Ausleihsystem"
+			>GitHub</a
 		>
 		verfügbar.
 	</p>
@@ -37,7 +37,7 @@
 	<h2>Serveradministration</h2>
 
 	<p>
-		Server-Administration durch AStA mit <a href="https://vercel.app"> Vercel.</a>
+		Die Server-Administration erfolgt durch den AStA der Technischen Hochschule Mannheim.
 	</p>
 
 	<h2>Haftungsausschluss</h2>
