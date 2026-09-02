@@ -18,67 +18,70 @@
 		DELETE: "bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300",
 	};
 
-	// Lokale Kopien, damit die Presets die Felder setzen können
-	let from = data.filters.from;
-	let to = data.filters.to;
+	// Datumsfelder als freier Text im Format TT.MM.JJJJ - das native <input type="date">
+	// zeigt je nach Browser-Sprache US-Format und laesst sich schlecht tippen.
+	let from = data.filters.fromInput;
+	let to = data.filters.toInput;
 	let actorId = data.filters.actorId;
 	let action = data.filters.action;
 	let q = data.filters.q;
 
 	// Nach einer Navigation (neue Filter in der URL) die Felder wieder angleichen
 	$: if (data.filters) {
-		from = data.filters.from;
-		to = data.filters.to;
+		from = data.filters.fromInput;
+		to = data.filters.toInput;
 		actorId = data.filters.actorId;
 		action = data.filters.action;
 		q = data.filters.q;
 	}
 
-	function isoDate(date: Date): string {
+	function deDate(date: Date): string {
 		const pad = (n: number) => String(n).padStart(2, "0");
-		return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+		return `${pad(date.getDate())}.${pad(date.getMonth() + 1)}.${date.getFullYear()}`;
 	}
 
-	function setRange(start: Date, end: Date) {
-		from = isoDate(start);
-		to = isoDate(end);
+	/** Auswahl im Zeitraum-Dropdown -> fuellt die beiden Textfelder. */
+	function applyRange(value: string) {
+		const now = new Date();
+
+		if (value === "custom") return;
+		if (value === "all") {
+			from = "";
+			to = "";
+			return;
+		}
+		if (value === "month") {
+			from = deDate(new Date(now.getFullYear(), now.getMonth(), 1));
+			to = deDate(new Date(now.getFullYear(), now.getMonth() + 1, 0));
+			return;
+		}
+		if (value === "30d") {
+			const start = new Date(now);
+			start.setDate(start.getDate() - 29);
+			from = deDate(start);
+			to = deDate(now);
+			return;
+		}
+
+		// Jahreszahl
+		from = `01.01.${value}`;
+		to = `31.12.${value}`;
 	}
 
-	const now = new Date();
-	const presets = [
-		{
-			label: "Dieses Jahr",
-			apply: () => setRange(new Date(now.getFullYear(), 0, 1), new Date(now.getFullYear(), 11, 31)),
-		},
-		{
-			label: "Letztes Jahr",
-			apply: () =>
-				setRange(new Date(now.getFullYear() - 1, 0, 1), new Date(now.getFullYear() - 1, 11, 31)),
-		},
-		{
-			label: "Dieser Monat",
-			apply: () =>
-				setRange(
-					new Date(now.getFullYear(), now.getMonth(), 1),
-					new Date(now.getFullYear(), now.getMonth() + 1, 0),
-				),
-		},
-		{
-			label: "Letzte 30 Tage",
-			apply: () => {
-				const start = new Date(now);
-				start.setDate(start.getDate() - 29);
-				setRange(start, now);
-			},
-		},
-		{
-			label: "Gesamt",
-			apply: () => {
-				from = "";
-				to = "";
-			},
-		},
-	];
+	/** Welcher Eintrag im Dropdown passt zu den aktuellen Textfeldern? */
+	$: rangeSelection = (() => {
+		if (!from && !to) return "all";
+		const year = /^01\.01\.(\d{4})$/.exec(from)?.[1];
+		if (year && to === `31.12.${year}`) return year;
+		return "custom";
+	})();
+
+	let rangeChoice = "";
+	$: rangeChoice = rangeSelection;
+
+	function onRangeChange(event: Event) {
+		applyRange((event.currentTarget as HTMLSelectElement).value);
+	}
 
 	// Query-String für den CSV-Export – identisch zu den aktuell angezeigten Filtern
 	$: exportQuery = new URLSearchParams({
@@ -97,7 +100,6 @@
 	function formatTimestamp(value: string | Date): string {
 		return dateTimeFormat.format(new Date(value));
 	}
-
 	$: truncated = data.total > data.entries.length;
 </script>
 
@@ -133,12 +135,45 @@
 			<form method="GET" class="space-y-4">
 				<div class="flex flex-wrap items-end gap-3">
 					<div class="space-y-1">
+						<Label for="range">Zeitraum</Label>
+						<select
+							id="range"
+							value={rangeChoice}
+							on:change={onRangeChange}
+							class="flex h-10 w-[190px] rounded-md border border-input bg-background px-3 py-2 text-sm"
+						>
+							<option value="all">Gesamter Zeitraum</option>
+							{#each data.years as year}
+								<option value={String(year)}>{year}</option>
+							{/each}
+							<option value="month">Dieser Monat</option>
+							<option value="30d">Letzte 30 Tage</option>
+							<option value="custom">Benutzerdefiniert …</option>
+						</select>
+					</div>
+					<div class="space-y-1">
 						<Label for="from">Von</Label>
-						<Input id="from" type="date" name="from" bind:value={from} class="w-[160px]" />
+						<Input
+							id="from"
+							name="from"
+							bind:value={from}
+							placeholder="TT.MM.JJJJ"
+							inputmode="numeric"
+							autocomplete="off"
+							class="w-[140px]"
+						/>
 					</div>
 					<div class="space-y-1">
 						<Label for="to">Bis</Label>
-						<Input id="to" type="date" name="to" bind:value={to} class="w-[160px]" />
+						<Input
+							id="to"
+							name="to"
+							bind:value={to}
+							placeholder="TT.MM.JJJJ"
+							inputmode="numeric"
+							autocomplete="off"
+							class="w-[140px]"
+						/>
 					</div>
 					<div class="space-y-1">
 						<Label for="actorId">Benutzer</Label>
@@ -183,18 +218,17 @@
 					<Button variant="outline" href="/admin/history">Zurücksetzen</Button>
 				</div>
 
-				<div class="flex flex-wrap items-center gap-2">
-					<span class="text-sm text-muted-foreground">Zeitraum:</span>
-					{#each presets as preset}
-						<button
-							type="button"
-							class="rounded-md border px-2 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
-							on:click={preset.apply}
-						>
-							{preset.label}
-						</button>
-					{/each}
-				</div>
+				{#if data.invalidDates.length > 0}
+					<p class="text-sm text-red-600 dark:text-red-400">
+						{data.invalidDates.join(" und ")}
+						{data.invalidDates.length === 1 ? "wurde" : "wurden"} nicht als Datum erkannt und
+						{data.invalidDates.length === 1 ? "bleibt" : "bleiben"} unberücksichtigt. Format: TT.MM.JJJJ
+					</p>
+				{:else}
+					<p class="text-xs text-muted-foreground">
+						Zeitraum auswählen oder Datum direkt eintippen (TT.MM.JJJJ). Leere Felder = keine Grenze.
+					</p>
+				{/if}
 			</form>
 		</Card.Header>
 		<Card.Content>

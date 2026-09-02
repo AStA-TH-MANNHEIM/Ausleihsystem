@@ -6,7 +6,10 @@ export type HistoryFilters = {
 	from: string;
 	/** ISO-Datum (YYYY-MM-DD) oder "" */
 	to: string;
-	/** User-Id oder "" fuer alle */
+	/** Unveraenderte Eingabe des Benutzers, fuer Formular und Fehlerhinweis */
+	fromInput: string;
+	toInput: string;
+	/** User-Id, NO_ACTOR oder "" fuer alle */
 	actorId: string;
 	/** Aktion oder "" fuer alle */
 	action: string;
@@ -22,20 +25,56 @@ export const HISTORY_ACTIONS: ItemChangeAction[] = ['CREATE', 'UPDATE', 'DELETE'
  */
 export const NO_ACTOR = '__none__';
 
+/**
+ * Akzeptiert TT.MM.JJJJ (auch 1.1.2026) sowie ISO (JJJJ-MM-TT) und liefert ISO zurueck.
+ * Nicht erkannte Eingaben ergeben "" und wirken damit wie "keine Grenze"; die Seite
+ * weist auf eine nicht erkannte Eingabe hin, damit sie nicht still ignoriert wird.
+ */
+export function normalizeDateInput(value: string): string {
+	const input = (value ?? '').trim();
+	if (!input) return '';
+
+	const iso = /^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(input);
+	if (iso) return `${iso[1]}-${iso[2].padStart(2, '0')}-${iso[3].padStart(2, '0')}`;
+
+	const german = /^(\d{1,2})\.(\d{1,2})\.(\d{4})$/.exec(input);
+	if (german) return `${german[3]}-${german[2].padStart(2, '0')}-${german[1].padStart(2, '0')}`;
+
+	return '';
+}
+
+/** ISO -> TT.MM.JJJJ fuer die Anzeige im Formular. */
+export function formatDateInput(value: string): string {
+	const iso = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+	return iso ? `${iso[3]}.${iso[2]}.${iso[1]}` : '';
+}
+
 /** Liest die Filter aus den Query-Parametern. Ohne Angabe: laufendes Kalenderjahr. */
 export function parseFilters(params: URLSearchParams): HistoryFilters {
 	const hasRange = params.has('from') || params.has('to');
 	const currentYear = new Date().getFullYear();
+	const fromInput = (params.get('from') ?? '').trim();
+	const toInput = (params.get('to') ?? '').trim();
 
 	return {
-		from: hasRange ? (params.get('from') ?? '') : `${currentYear}-01-01`,
-		to: hasRange ? (params.get('to') ?? '') : `${currentYear}-12-31`,
+		from: hasRange ? normalizeDateInput(fromInput) : `${currentYear}-01-01`,
+		to: hasRange ? normalizeDateInput(toInput) : `${currentYear}-12-31`,
+		fromInput: hasRange ? fromInput : `01.01.${currentYear}`,
+		toInput: hasRange ? toInput : `31.12.${currentYear}`,
 		actorId: params.get('actorId') ?? '',
 		action: HISTORY_ACTIONS.includes(params.get('action') as ItemChangeAction)
 			? (params.get('action') as string)
 			: '',
 		q: (params.get('q') ?? '').trim()
 	};
+}
+
+/** Eingabe war gefuellt, liess sich aber nicht als Datum lesen. */
+export function invalidDateInputs(filters: HistoryFilters): string[] {
+	const invalid: string[] = [];
+	if (filters.fromInput && !filters.from) invalid.push('Von');
+	if (filters.toInput && !filters.to) invalid.push('Bis');
+	return invalid;
 }
 
 /** Baut die Prisma-`where`-Klausel aus den Filtern. */
