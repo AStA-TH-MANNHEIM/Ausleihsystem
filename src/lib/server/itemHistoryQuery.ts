@@ -16,6 +16,12 @@ export type HistoryFilters = {
 
 export const HISTORY_ACTIONS: ItemChangeAction[] = ['CREATE', 'UPDATE', 'DELETE'];
 
+/**
+ * Sentinel fuer "Eintraege ohne Benutzerzuordnung" (actorId IS NULL) - z. B. der
+ * Alt-Bestand, der vor Einfuehrung der Historie angelegt wurde.
+ */
+export const NO_ACTOR = '__none__';
+
 /** Liest die Filter aus den Query-Parametern. Ohne Angabe: laufendes Kalenderjahr. */
 export function parseFilters(params: URLSearchParams): HistoryFilters {
 	const hasRange = params.has('from') || params.has('to');
@@ -43,7 +49,8 @@ export function buildWhere(filters: HistoryFilters): Prisma.ItemChangeLogWhereIn
 	if (to) timestamp.lt = to;
 	if (timestamp.gte || timestamp.lt) where.timestamp = timestamp;
 
-	if (filters.actorId) where.actorId = filters.actorId;
+	if (filters.actorId === NO_ACTOR) where.actorId = null;
+	else if (filters.actorId) where.actorId = filters.actorId;
 	if (filters.action) where.action = filters.action as ItemChangeAction;
 	if (filters.q) {
 		where.OR = [
@@ -85,6 +92,7 @@ export function formatChanges(changes: unknown): string {
 /** Baut den Dateinamen des Exports aus dem gewaehlten Zeitraum. */
 export function exportFileName(filters: HistoryFilters, actorName?: string): string {
 	const parts = ['inventar-historie'];
+	if (filters.actorId === NO_ACTOR) actorName = 'ohne-Benutzer';
 	if (actorName) parts.push(actorName.replace(/[^a-zA-Z0-9-_]/g, '_'));
 	if (filters.from) parts.push(filters.from);
 	if (filters.to) parts.push(`bis-${filters.to}`);

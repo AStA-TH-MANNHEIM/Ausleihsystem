@@ -152,6 +152,7 @@
 							{#each data.users as user (user.id)}
 								<option value={user.id}>{user.username}</option>
 							{/each}
+							<option value="__none__">Ohne Benutzerzuordnung</option>
 						</select>
 					</div>
 					<div class="space-y-1">

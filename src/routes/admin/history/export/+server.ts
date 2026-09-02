@@ -2,7 +2,13 @@ import type { RequestHandler } from "./$types";
 import { prisma } from "$lib/server/db/prismaConnection";
 import { error } from "@sveltejs/kit";
 import { ITEM_ACTION_LABELS, type ItemChangeAction } from "$lib/server/itemChangeLogService";
-import { buildWhere, exportFileName, formatChanges, parseFilters } from "$lib/server/itemHistoryQuery";
+import {
+	buildWhere,
+	exportFileName,
+	formatChanges,
+	NO_ACTOR,
+	parseFilters,
+} from "$lib/server/itemHistoryQuery";
 
 const COLUMNS = [
 	"Zeitpunkt",
@@ -39,7 +45,7 @@ export const GET: RequestHandler = async ({ url, locals }) => {
 		orderBy: { timestamp: "asc" },
 	});
 
-	const actorName = filters.actorId
+	const actorName = filters.actorId && filters.actorId !== NO_ACTOR
 		? (entries.find((e) => e.actorId === filters.actorId)?.actorName ??
 			(await prisma.user.findUnique({ where: { id: filters.actorId } }))?.username)
 		: undefined;
