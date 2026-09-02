@@ -32,6 +32,9 @@ type Size = VariantProps<typeof buttonVariants>["size"];
 type Props = HTMLButtonAttributes & {
 	variant?: Variant;
 	size?: Size;
+	/** Wenn gesetzt, rendert der Button einen Link (<a>) statt eines <button>. */
+	href?: string;
+	target?: string;
 };
 
 type Events = {

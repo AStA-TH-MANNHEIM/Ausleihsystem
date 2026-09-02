@@ -1,6 +1,12 @@
 import type { PageServerLoad, Actions } from "./$types";
 import { prisma } from "$lib/server/db/prismaConnection";
 import { fail } from "@sveltejs/kit";
+import {
+	creatorFields,
+	logItemCreated,
+	logItemDeleted,
+	logItemUpdated,
+} from "$lib/server/itemChangeLogService";
 
 export const load: PageServerLoad = async () => {
 	const [items, locations, tags, lenderTypes] = await Promise.all([
@@ -22,7 +28,7 @@ export const load: PageServerLoad = async () => {
 };
 
 export const actions: Actions = {
-	create: async ({ request }) => {
+	create: async ({ request, locals }) => {
 		const formData = await request.formData();
 		const id = formData.get("id") as string;
 		const articleName = formData.get("articleName") as string;
@@ -68,6 +74,7 @@ export const actions: Actions = {
 				defectQuantity,
 				itemStatus,
 				description,
+				...creatorFields(locals.user),
 			};
 			if (standortId) data.standortId = standortId;
 			if (tagIds.length > 0) data.ItemTags = { create: tagIds.map((tagId) => ({ tagId })) };
@@ -75,6 +82,7 @@ export const actions: Actions = {
 			if (components.length > 0) data.ItemComponents = { create: components };
 
 			await prisma.item.create({ data });
+			await logItemCreated({ ...data, standortId: standortId ?? null }, locals.user);
 		} catch (e: any) {
 			return fail(400, { error: e.message });
 		}
@@ -82,7 +90,7 @@ export const actions: Actions = {
 		return { success: true };
 	},
 
-	update: async ({ request }) => {
+	update: async ({ request, locals }) => {
 		const formData = await request.formData();
 		const id = formData.get("id") as string;
 		const articleName = formData.get("articleName") as string;
@@ -115,6 +123,8 @@ export const actions: Actions = {
 		}
 
 		try {
+			const before = await prisma.item.findUnique({ where: { id } });
+
 			await (prisma.item.update as any)({
 				where: { id },
 				data: {
@@ -141,6 +151,24 @@ export const actions: Actions = {
 					},
 				},
 			});
+
+			if (before) {
+				await logItemUpdated(
+					before,
+					{
+						articleName,
+						bezeichnung,
+						kaufdatum,
+						kaufpreis,
+						quantity,
+						defectQuantity,
+						itemStatus,
+						standortId,
+						description,
+					},
+					locals.user,
+				);
+			}
 		} catch (e: any) {
 			return fail(400, { error: e.message });
 		}
@@ -148,12 +176,18 @@ export const actions: Actions = {
 		return { success: true };
 	},
 
-	delete: async ({ request }) => {
+	delete: async ({ request, locals }) => {
 		const formData = await request.formData();
 		const id = formData.get("id") as string;
 
 		try {
+			const before = await prisma.item.findUnique({ where: { id } });
+
 			await prisma.item.delete({ where: { id } });
+
+			if (before) {
+				await logItemDeleted(before, locals.user);
+			}
 		} catch (e: any) {
 			return fail(400, { error: e.message });
 		}

@@ -69,6 +69,12 @@ enum ChangeLogStatus {
   CANCELLED
 }
 
+enum ItemChangeAction {
+  CREATE
+  UPDATE
+  DELETE
+}
+
 model Ausleihe {
   id            String         @id @default(uuid())
   startDate     String
@@ -179,6 +185,35 @@ model Item {
 
   ItemTags                 ItemTag[]
   ItemLenderTypes          ItemLenderType[]
+
+  createdAt                DateTime   @default(now())
+  /// Snapshot des Benutzernamens, damit die Zuordnung auch nach dem Loeschen eines Users erhalten bleibt
+  createdByName            String?
+  createdById              String?
+  createdBy                User?      @relation("ItemCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([createdById])
+  @@index([createdAt])
+}
+
+/// Historie aller Inventar-Aenderungen. Bewusst ohne Relation zu Item,
+/// damit die Historie auch nach dem Loeschen eines Items erhalten bleibt.
+model ItemChangeLog {
+  id         Int              @id @default(autoincrement())
+  timestamp  DateTime         @default(now())
+  action     ItemChangeAction
+  itemId     String
+  /// Snapshot der Item-Bezeichnung zum Zeitpunkt der Aenderung
+  itemLabel  String
+  actorName  String
+  actorId    String?
+  /// JSON-Array: [{ field, label, oldValue, newValue }]
+  changes    Json
+
+  @@index([timestamp])
+  @@index([actorId])
+  @@index([itemId])
+  @@index([action])
 }
 
 model Tag {
@@ -224,6 +259,8 @@ model User {
 
   AusleiheAusgabe Ausleihe[] @relation("AusgabeBetreuer")
   AusleiheAbholung Ausleihe[] @relation("AbholungBetreuer")
+
+  createdItems Item[] @relation("ItemCreatedBy")
 }
 
 model Session {
