@@ -40,47 +40,51 @@
 		return `${pad(date.getDate())}.${pad(date.getMonth() + 1)}.${date.getFullYear()}`;
 	}
 
-	/** Auswahl im Zeitraum-Dropdown -> fuellt die beiden Textfelder. */
-	function applyRange(value: string) {
+	/**
+	 * Welcher Dropdown-Eintrag passt zu einem Datumspaar?
+	 * Ein volles Kalenderjahr wird als Jahr erkannt, alles andere ist "benutzerdefiniert".
+	 */
+	function detectRange(fromValue: string, toValue: string): string {
+		if (!fromValue && !toValue) return "all";
+		const year = /^0?1\.0?1\.(\d{4})$/.exec(fromValue)?.[1];
+		if (year && toValue === `31.12.${year}`) return year;
+		return "custom";
+	}
+
+	// Auswahl fuer den ersten Render (auch serverseitig), damit das Dropdown sofort
+	// den Zeitraum aus der URL zeigt und nicht erst nach der Hydration.
+	$: rangeSelection = detectRange(data.filters.fromInput, data.filters.toInput);
+
+	let rangeEl: HTMLSelectElement | undefined;
+
+	/** Dropdown -> Textfelder */
+	function onRangeChange(event: Event) {
+		const value = (event.currentTarget as HTMLSelectElement).value;
 		const now = new Date();
 
+		// "Benutzerdefiniert" laesst die Felder bewusst unangetastet
 		if (value === "custom") return;
+
 		if (value === "all") {
 			from = "";
 			to = "";
-			return;
-		}
-		if (value === "month") {
+		} else if (value === "month") {
 			from = deDate(new Date(now.getFullYear(), now.getMonth(), 1));
 			to = deDate(new Date(now.getFullYear(), now.getMonth() + 1, 0));
-			return;
-		}
-		if (value === "30d") {
+		} else if (value === "30d") {
 			const start = new Date(now);
 			start.setDate(start.getDate() - 29);
 			from = deDate(start);
 			to = deDate(now);
-			return;
+		} else {
+			from = `01.01.${value}`;
+			to = `31.12.${value}`;
 		}
-
-		// Jahreszahl
-		from = `01.01.${value}`;
-		to = `31.12.${value}`;
 	}
 
-	/** Welcher Eintrag im Dropdown passt zu den aktuellen Textfeldern? */
-	$: rangeSelection = (() => {
-		if (!from && !to) return "all";
-		const year = /^01\.01\.(\d{4})$/.exec(from)?.[1];
-		if (year && to === `31.12.${year}`) return year;
-		return "custom";
-	})();
-
-	let rangeChoice = "";
-	$: rangeChoice = rangeSelection;
-
-	function onRangeChange(event: Event) {
-		applyRange((event.currentTarget as HTMLSelectElement).value);
+	/** Textfelder -> Dropdown (beim Tippen auf "Benutzerdefiniert" umschalten) */
+	function onDateInput() {
+		if (rangeEl) rangeEl.value = detectRange(from, to);
 	}
 
 	// Query-String für den CSV-Export – identisch zu den aktuell angezeigten Filtern
@@ -138,17 +142,21 @@
 						<Label for="range">Zeitraum</Label>
 						<select
 							id="range"
-							value={rangeChoice}
+							bind:this={rangeEl}
 							on:change={onRangeChange}
 							class="flex h-10 w-[190px] rounded-md border border-input bg-background px-3 py-2 text-sm"
 						>
-							<option value="all">Gesamter Zeitraum</option>
+							<option value="all" selected={rangeSelection === "all"}>Gesamter Zeitraum</option>
 							{#each data.years as year}
-								<option value={String(year)}>{year}</option>
+								<option value={String(year)} selected={rangeSelection === String(year)}>
+									{year}
+								</option>
 							{/each}
 							<option value="month">Dieser Monat</option>
 							<option value="30d">Letzte 30 Tage</option>
-							<option value="custom">Benutzerdefiniert …</option>
+							<option value="custom" selected={rangeSelection === "custom"}>
+								Benutzerdefiniert …
+							</option>
 						</select>
 					</div>
 					<div class="space-y-1">
@@ -157,6 +165,7 @@
 							id="from"
 							name="from"
 							bind:value={from}
+							on:input={onDateInput}
 							placeholder="TT.MM.JJJJ"
 							inputmode="numeric"
 							autocomplete="off"
@@ -169,6 +178,7 @@
 							id="to"
 							name="to"
 							bind:value={to}
+							on:input={onDateInput}
 							placeholder="TT.MM.JJJJ"
 							inputmode="numeric"
 							autocomplete="off"
