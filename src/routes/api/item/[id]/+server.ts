@@ -1,5 +1,7 @@
-import {type Item, ItemSchema } from '$lib/generated/zod';
+import { ItemSchema } from '$lib/generated/zod';
 import { prisma } from '$lib/server/db/prismaConnection';
+import { ItemInputSchema } from '$lib/server/itemInputSchema';
+import { logItemUpdated } from '$lib/server/itemChangeLogService';
 import { error, json } from '@sveltejs/kit';
 
 const idSchema = ItemSchema.pick({ id: true });
@@ -37,7 +39,7 @@ export async function PUT(event) {
 	try {
 		const id = idSchema.parse({ id: event.params.id }).id;
 		const body = await event.request.json();
-		const item: Item = ItemSchema.parse(body);
+		const item = ItemInputSchema.parse(body);
 
 		const dbItem = await prisma.item.findUnique({
 			where: {
@@ -62,6 +64,8 @@ export async function PUT(event) {
 			},
 			data: item
 		});
+
+		await logItemUpdated(dbItem, item, event.locals.user);
 
 		console.log('Item:update', dbItem, 'to', item, ' by', event.locals.user);
 

@@ -140,6 +140,7 @@
 						<Table.Head>Standort</Table.Head>
 						<Table.Head>Tags</Table.Head>
 						<Table.Head>Ausleihertypen</Table.Head>
+						<Table.Head>Hinzugefügt von</Table.Head>
 						<Table.Head class="w-[100px]">Aktionen</Table.Head>
 					</Table.Row>
 				</Table.Header>
@@ -173,6 +174,16 @@
 									{/each}
 								</div>
 							</Table.Cell>
+							<Table.Cell class="text-sm">
+								{#if item.createdByName}
+									<span class="font-medium">{item.createdByName}</span>
+									<span class="block text-xs text-muted-foreground">
+										{new Date(item.createdAt).toLocaleDateString("de-DE")}
+									</span>
+								{:else}
+									<span class="text-muted-foreground">unbekannt</span>
+								{/if}
+							</Table.Cell>
 							<Table.Cell>
 								<Button variant="ghost" size="sm" on:click={() => openEdit(item)}>
 									Bearbeiten
@@ -182,7 +193,7 @@
 					{/each}
 					{#if filteredItems.length === 0}
 						<Table.Row>
-							<Table.Cell colspan={9} class="text-center text-muted-foreground py-8">
+							<Table.Cell colspan={10} class="text-center text-muted-foreground py-8">
 								Keine Items gefunden
 							</Table.Cell>
 						</Table.Row>

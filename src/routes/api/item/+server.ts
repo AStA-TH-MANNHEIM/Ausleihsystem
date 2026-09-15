@@ -1,5 +1,6 @@
-import {type Item, ItemSchema } from '$lib/generated/zod';
 import { prisma } from '$lib/server/db/prismaConnection';
+import { ItemInputSchema } from '$lib/server/itemInputSchema';
+import { creatorFields, logItemCreated } from '$lib/server/itemChangeLogService';
 import { error, json } from '@sveltejs/kit';
 
 export async function POST(event) {
@@ -11,7 +12,7 @@ export async function POST(event) {
 	console.log(body);
 
 	try {
-		const item: Item = ItemSchema.parse(body);
+		const item = ItemInputSchema.parse(body);
 
 		const existingItem = await prisma.item.findUnique({
 			where: {
@@ -23,7 +24,9 @@ export async function POST(event) {
 			return json({ message: 'Id bereits vorhanden.' }, { status: 400 });
 		}
 
-		await prisma.item.create({ data: item });
+		await prisma.item.create({ data: { ...item, ...creatorFields(event.locals.user) } });
+
+		await logItemCreated(item, event.locals.user);
 
 		console.log('Item:add', item, ' by', event.locals.user);
 

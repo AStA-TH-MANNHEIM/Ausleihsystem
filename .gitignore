@@ -25,3 +25,10 @@ yarn-error.log*
 
 # OS
 Thumbs.db
+
+# Datenbank-Dumps / Backups (enthalten Produktivdaten!)
+# Nur im Projektstamm - Migrationen unter prisma/migrations bleiben versioniert.
+/*.sql
+*.sql.gz
+*.dump
+!prisma/migrations/**/*.sql
