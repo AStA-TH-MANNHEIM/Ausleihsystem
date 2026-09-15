@@ -71,7 +71,6 @@
 		"@types/nodemailer": "^6.4.15",
 		"@types/pdfmake": "^0.2.12",
 		"@vincjo/datatables": "^1.14.10",
-		"better-sqlite3": "^9.6.0",
 		"bits-ui": "^0.21.16",
 		"lucia": "^3.2.0",
 		"pdfmake": "^0.2.20",
