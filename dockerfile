@@ -1,5 +1,5 @@
 # ---- STAGE 1: Build-Environment ----
-FROM node:18-slim AS builder
+FROM node:24-slim AS builder
 
 # Arbeitsverzeichnis festlegen
 WORKDIR /app
@@ -17,7 +17,7 @@ RUN npm install
 RUN npm run build
 
 # ---- STAGE 2: Runtime-Environment ----
-FROM node:18-slim AS runner
+FROM node:24-slim AS runner
 
 # OpenSSL installieren
 RUN apt-get update && apt-get install -y openssl ca-certificates && rm -rf /var/lib/apt/lists/*
