@@ -57,6 +57,7 @@ jobs:
             type=sha,format=short
 
       - name: Bauen und hochladen
+        id: build
         uses: docker/build-push-action@v7
         with:
           context: .
@@ -66,3 +67,21 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      # Der Prisma-Client gehoert nicht ins Browser-Bundle: dort wird daraus
+      # require(".prisma/client/index-browser"), was der Browser nicht aufloesen
+      # kann. Die Seite bricht beim Hydrieren ab und zeigt nur einen Fehler -
+      # bei HTTP 200 und korrektem HTML, also im Server-Log unsichtbar.
+      - name: Prisma darf nicht im Browser-Bundle landen
+        if: env.PUSH == 'true'
+        run: |
+          IMAGE="${{ env.IMAGE }}@${{ steps.build.outputs.digest }}"
+          docker pull -q "$IMAGE"
+          TREFFER=$(docker run --rm --entrypoint sh "$IMAGE" -c 'grep -rl "index-browser" /app/build/client --include="*.js" || true')
+          if [ -n "$TREFFER" ]; then
+            echo "::error::Der Prisma-Client ist im Browser-Bundle gelandet: $TREFFER"
+            echo "Ursache ist meist ein Wert-Import aus \$lib/generated/zod in Browser-Code."
+            echo "Statuswerte kommen stattdessen aus \$lib/ausleihStatus."
+            exit 1
+          fi
+          echo "In Ordnung: kein Prisma-Client in build/client"
