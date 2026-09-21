@@ -141,6 +141,8 @@ Die wichtigsten Variablen:
 | `DOMAIN`           | ja      | Öffentliche URL der Anwendung (für Links in E-Mails)            |
 | `ES_DISABLED`      | nein    | `TRUE` deaktiviert den E-Mail-Versand komplett (Dev-Modus)      |
 | `ES_HOST` / `ES_USER` / `ES_PASSWORD` | nein | SMTP-Zugangsdaten                              |
+| `ES_PORT`          | nein    | Abweichender SMTP-Port (Standard: 465 bzw. 587)                 |
+| `ES_FROM`          | nein    | Absender-Adresse, falls `ES_USER` keine E-Mail-Adresse ist       |
 | `ES_AUSLEIHE_TEAM` | nein    | Team-Postfach für Benachrichtigungen                            |
 | `PROTOCOL_HEADER`, `HOST_HEADER`, … | nein | Header-Mapping hinter Reverse Proxy             |
 

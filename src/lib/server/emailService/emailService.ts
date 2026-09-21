@@ -7,7 +7,9 @@ const AusleihStatus = AusleihStatusSchema.Enum;
 import { logger } from '$lib/logger';
 import { formatDiffForEmail, type ChangeEntry } from '../changeLogService';
 
-const fromData = '"AStA TH Mannheim" <' + env.ES_USER + '>';
+// Absender: beim Versanddienst freigegebene Adresse. ES_USER ist dort nur der
+// Login-Name und nicht zwingend eine E-Mail-Adresse.
+const fromData = '"AStA TH Mannheim" <' + (env.ES_FROM || env.ES_USER) + '>';
 const domain = env.DOMAIN;
 // development and debug where I don't want to send out dozens of emails
 const isEsDisabled = env.ES_DISABLED === 'TRUE';
@@ -15,9 +17,13 @@ const isEsDisabled = env.ES_DISABLED === 'TRUE';
 function genTransporter() {
 	const isSecure = env.ES_SECURE === 'TRUE';
 
+	// Port ueberschreibbar: manche Anbieter sperren 25, 465 und 587 ausgehend,
+	// Versanddienste bieten dann Alternativen wie 2525 an.
+	const port = Number(env.ES_PORT) || (isSecure ? 465 : 587);
+
 	return nodemailer.createTransport({
 		host: env.ES_HOST,
-		port: isSecure ? 465 : 587,
+		port,
 		secure: isSecure,
 
 		auth: {
