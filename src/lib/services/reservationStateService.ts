@@ -1,5 +1,6 @@
 import { logger } from '$lib/logger';
-import { AusleihStatusSchema,  type Ausleihe} from '$lib/generated/zod';
+import { AusleihStatusSchema } from '$lib/ausleihStatus';
+import type { Ausleihe } from '$lib/generated/zod';
 const AusleihStatus = AusleihStatusSchema.Enum;
 
 export const transitions = {
