@@ -14,6 +14,19 @@ const domain = env.DOMAIN;
 // development and debug where I don't want to send out dozens of emails
 const isEsDisabled = env.ES_DISABLED === 'TRUE';
 
+/**
+ * Link als Absatz. Die Adresse steht zusaetzlich im Klartext darunter, weil
+ * manche Mailprogramme Links nicht klickbar machen.
+ */
+function linkAbsatz(url: string, beschriftung: string) {
+	return (
+		'<p><a href="' + url + '">' + beschriftung + '</a></p>' +
+		'<p style="font-size:12px;color:#666">Falls der Link nicht funktioniert, kopiere diese Adresse in die Adresszeile deines Browsers:<br>' +
+		url +
+		'</p>'
+	);
+}
+
 function genTransporter() {
 	const isSecure = env.ES_SECURE === 'TRUE';
 
@@ -148,18 +161,20 @@ function generateVerifyEmail(empfänger: string, r_hash: string) {
 		from: fromData, // Absender-Adresse
 		to: empfänger,
 		subject: 'Ausleihe verifizieren',
-		text: 'meow',
+		text: `Vielen Dank für deinen Ausleihantrag.
+
+Bitte verifiziere ihn über diesen Link, damit wir ihn bearbeiten können:
+${domain}/reservation/${r_hash}
+
+Wenn du diesen Antrag nicht gestellt hast, ignoriere bitte diese E-Mail.
+
+Viele Grüße
+Dein AStA`,
 		html:
 			'<h1>Bitte verifiziere deinen Antrag</h1>' +
-			'<p>Vielen Dank für deinen Ausleihantrag.<br> Bitte klicke auf den untenstehenden Link, um deinen Antrag zu verifizieren und den Ausleihprozess abzuschließen.</p>' +
-			'<p><a href="' +
-			domain +
-			'/reservation/' +
-			r_hash +
-			'">' +
-			r_hash +
-			'</a></p>' +
-			'</a></p><p>Wenn du diesen Antrag nicht gestellt hast, ignoriere bitte diese E-Mail.</p>' +
+			'<p>Vielen Dank für deinen Ausleihantrag.<br>Bitte verifiziere ihn über den folgenden Link, damit wir ihn bearbeiten können.</p>' +
+			linkAbsatz(domain + '/reservation/' + r_hash, 'Ausleihantrag jetzt verifizieren') +
+			'<p>Wenn du diesen Antrag nicht gestellt hast, ignoriere bitte diese E-Mail.</p>' +
 			'<p>Viele Grüße,<br>Dein AStA</p>'
 	};
 }
@@ -169,17 +184,20 @@ const reservationEmail = (ausleihe: Ausleihe) => {
 		from: fromData, // Absender-Adresse
 		to: ausleihe.email,
 		subject: 'Bestätigung erforderlich, Status des Ausleiheantrags: ' + ausleihe.ausleihStatus,
-		text: 'meow',
+		text: `Status deines Ausleihantrags: ${ausleihe.ausleihStatus}
+
+Möglicherweise wurden nicht alle beantragten Gegenstände genehmigt.
+Bitte sieh dir deinen Ausleihantrag an und buche ihn dort:
+${domain}/reservation/${ausleihe.id}
+
+Viele Grüße
+Dein AStA`,
 		html:
 			'<h1>Status deines Ausleihantrags:<br> ' +
 			ausleihe.ausleihStatus +
-			'</h1><p>Möglicherweise wurden nicht alle beantragten Gegenstände deines Ausleihantrags genehmigt.<br> Bitte klicke auf den untenstehenden Link, um deinen Ausleihantrag einzusehen und dort zu <b>buchen</b>.</p><p><a href="' +
-			domain +
-			'/reservation/' +
-			ausleihe.id +
-			'">' +
-			ausleihe.id +
-			'</a></p><p>Viele Grüße,<br>Dein AStA</p>'
+			'</h1><p>Möglicherweise wurden nicht alle beantragten Gegenstände deines Ausleihantrags genehmigt.<br>Bitte sieh dir deinen Ausleihantrag an und <b>buche</b> ihn dort.</p>' +
+			linkAbsatz(domain + '/reservation/' + ausleihe.id, 'Ausleihantrag ansehen und buchen') +
+			'<p>Viele Grüße,<br>Dein AStA</p>'
 	};
 };
 
@@ -188,17 +206,19 @@ const statusChangeEmail = (ausleihe: Ausleihe) => {
 		from: fromData, // Absender-Adresse
 		to: ausleihe.email,
 		subject: 'Ausleihstatus geändert: ' + ausleihe.ausleihStatus,
-		text: 'meow',
+		text: `Neuer Status deines Ausleihantrags: ${ausleihe.ausleihStatus}
+
+Du kannst deinen Ausleihantrag hier einsehen:
+${domain}/reservation/${ausleihe.id}
+
+Viele Grüße
+Dein AStA`,
 		html:
 			'<h1>Neuer Status deines Ausleihantrags:<br> ' +
 			ausleihe.ausleihStatus +
-			'</h1><p>Der Status deines Ausleihantrags wurde geändert.<br> Bitte klicke auf den untenstehenden Link, um deinen Ausleihantrag einzusehen.</p><p><a href="' +
-			domain +
-			'/reservation/' +
-			ausleihe.id +
-			'">' +
-			ausleihe.id +
-			'</a></p><p>Viele Grüße,<br>Dein AStA</p>'
+			'</h1><p>Der Status deines Ausleihantrags wurde geändert.</p>' +
+			linkAbsatz(domain + '/reservation/' + ausleihe.id, 'Ausleihantrag ansehen') +
+			'<p>Viele Grüße,<br>Dein AStA</p>'
 	};
 };
 
@@ -207,7 +227,18 @@ const zuweisungsEmail = (ausleihe: Ausleihe, betreungsEmail: string) => {
 		from: fromData, // Absender-Adresse
 		to: betreungsEmail,
 		subject: 'Ausleihe zugewiesen ' + ausleihe.id,
-		text: 'meow',
+		text: `Dir wurde eine Ausleihe zugewiesen.
+
+Antragstellung durch: ${ausleihe.vorname} ${ausleihe.nachname}
+Zeitraum: ${ausleihe.startDate} bis ${ausleihe.endDate}
+
+Bitte setze dich mit der antragstellenden Person in Verbindung, um einen Übergabezeitpunkt auszumachen.
+
+Ausleihantrag im Admin-Bereich:
+${domain}/admin/reservations/${ausleihe.id}
+
+Viele Grüße
+Dein AStA-Ausleihsystem`,
 		html:
 			'<h1>Dir wurde eine Ausleihe zugewiesen</h1>' +
 			'<p>Antragstellung erfolgt durch: ' +
@@ -221,13 +252,9 @@ const zuweisungsEmail = (ausleihe: Ausleihe, betreungsEmail: string) => {
 			ausleihe.endDate +
 			'.</p>' +
 			'<p>Bitte setze dich mit der Person, die den Antrag gestellt hat, in Verbindung, um einen Übergabezeitpunkt auszumachen.</p>' +
-			'<p>Klicke auf den untenstehenden Link, um den Ausleihantrag einzusehen.</p><p><a href="' +
-			domain +
-			'/admin/reservations/' +
-			ausleihe.id +
-			'">' +
-			ausleihe.id +
-			'</a></p><p>Viele Grüße,<br>Dein AStA-Ausleihsystem</p>'
+			'<p>Klicke auf den folgenden Link, um den Ausleihantrag einzusehen.</p>' +
+			linkAbsatz(domain + '/admin/reservations/' + ausleihe.id, 'Ausleihantrag im Admin-Bereich öffnen') +
+			'<p>Viele Grüße,<br>Dein AStA-Ausleihsystem</p>'
 	};
 };
 

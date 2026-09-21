@@ -1,6 +1,6 @@
 <script lang="ts">
 	
-	import { AusleihStatusSchema, type AusleihStatusType } from '$lib/generated/zod';
+	import { AusleihStatusSchema, type AusleihStatusType } from '$lib/ausleihStatus';
 	const AusleihStatus = AusleihStatusSchema.Enum;
 	
 	import { logger } from '$lib/logger';
