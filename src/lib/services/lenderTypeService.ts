@@ -8,7 +8,9 @@ export async function inferLenderTypes(email: string) {
 	return allTypes.filter((lt) =>
 		lt.LenderTypePatterns.some((p) => {
 			try {
-				return new RegExp(p.pattern).test(email);
+				// Gross-/Kleinschreibung ignorieren: Domains sind ohnehin case-insensitiv,
+				// und Nutzer tippen ihre Adresse haeufig mit Grossbuchstaben.
+				return new RegExp(p.pattern, 'i').test(email.trim());
 			} catch {
 				return false;
 			}

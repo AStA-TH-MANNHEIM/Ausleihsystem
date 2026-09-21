@@ -21,7 +21,8 @@
 		: lenderTypes.filter((lt) =>
 				lt.LenderTypePatterns.some((p) => {
 					try {
-						return new RegExp(p.pattern).test(email);
+						// wie im Server-Service: Gross-/Kleinschreibung ignorieren
+						return new RegExp(p.pattern, 'i').test(email.trim());
 					} catch {
 						return false;
 					}
